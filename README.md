@@ -1,52 +1,17 @@
-# RISC-V Reference Card
+# RISC-V and X86-64 Reference Card
 
-[![Build Status](https://travis-ci.com/jameslzhu/riscv-card.svg?branch=master)](https://travis-ci.com/jameslzhu/riscv-card)
-
-An unofficial reference sheet for RISC-V, the free and libre ISA from Berkeley. ([**PDF**][pdf]).
+An unofficial reference sheet for RISC-V, the free and libre ISA from Berkeley and also a suitably small and sane subset of X86-64. ([**PDF**][pdf]).  Derived from [https://github.com/jameslzhu/riscv-card][https://github.com/jameslzhu/riscv-card].  This is optimized for ECS 50 at UC Davis.
 
 ## What's inside?
 
 - The base ISA (RV32I), with opcode values and C-like descriptions
 - Standard ISA extensions (most but not all yet)
-- Register aliases and calling conventions
+- Register aliases and calling conventions for RISC-V
 - Pseudoinstructions
+- x86 register aliases and calling conventions
 
-Other information from the more official reference cards not specific to the ISA,
-like the stack/heap memory layout, IEEE 754 floating-point layout, and size prefixes,
-have been omitted.
 
-## Why?
-
-In RISC tradition, the assembly reference for [MIPS][mips-green-sheet]
-and [RISC-V][riscv-card] fits onto a single double-sided 'Green Sheet'.
-
-When I took [CS 61C][cs61c] at UC Berkeley in 2017, we were the first semester taught
-using RISC-V, and our reference card scans from our [RISC-V textbook][patterson-hennessy]
-were low-quality. I wanted a card I didn't have to squint at, so I typeset it in LaTeX.
-
-The latest [Berkeley course reference card][cs61c-sp22] is also available.
-
-This little reference has grown well past a double-sided page, but if you still want
-the original you can print the first and last pages for the asm opcodes and calling convention.
-
-## Contributing
-
-This repository is not actively developed, but pull requests are accepted for
-fixes, new ISA standard extensions, style improvements, or other such changes.
-Please include a rebuilt PDF binary in your pull request.
-
-Print-friendly format is preferred, when possible: legible font sizes, clean
-page breaks and full letter page width usage.
-(A4 support may be a good thing to check.)
-
-Some ideas if you are truly motivated:
-- Multiple outputs (pdfs) for different domains / ISA extension sets, or for 32
-  / 64-bit support
-- Directly parsing the spec, banishing typos forever
-- Build system to select binary or hex instruction opcodes
-- Other ISA support? (probably only feasible for RISC ISAs)
-
-## Licensing
+## License
 
 This work is licensed under the Creative Commons [CC-BY-4.0][CC] license.
 (See LICENSE for the full text.)

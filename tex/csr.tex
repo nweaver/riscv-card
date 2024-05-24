@@ -1,0 +1,28 @@
+\section*{Control and Status Registers}
+\small
+\begin{tabular}{l|l|l}
+Instruction & Operation & Notes \\ \hline
+{\tt csrrw rd csr rs} & {\tt csr = rs; rd = csr} & {\tt rd=x0} only does the write \\
+{\tt csrrs rd csr rs} & {\tt csr = rs | csr; rd = csr} & {\tt rs=x0} only does the read \\
+{\tt csrrc rd csr rs} & {\tt csr = \^rs \& csr; rd = csr} & {\tt rs=x0} only does the read \\
+{\tt csrrwi rd csr imm} & {\tt csr = imm, rd = csr} & {\tt rd=x0} only writes.  Immediate is 5 bit, zero extended \\
+{\tt csrrsi rd csr imm} & {\tt csr = imm | csr, rd = csr} & {\tt imm=0} only reads.  Immediate is 5 bit, zero extended \\
+{\tt csrrci rd csr imm} & {\tt csr = \^imm \& csr, rd = csr} & {\tt imm=0} only reads.  Immediate is 5 bit, zero extended \\
+\end{tabular}
+
+\vspace{0.5in} The listing of CSRs is deliberately incomplete.
+Pseudo-instructions {\tt csrw} and {\tt csrr} are converted to {\tt
+  csrrw} and {\tt csrrs} respectively.  All CSR instructions are
+I-type with the immediate specifying the CSR.  The immediate CSRs use
+the source register as a 5-bit, zero-extended immediate.  Traps are
+returned from using {\tt mret}.
+
+\vspace{0.2in}
+
+\begin{tabular}{l|l}
+  CSR & Meaning and Access \\ \hline
+  mtvec & Address of the trap handler.  If the last bit is set the interrupt portion is vectored. \\
+  mepc & Machine Exception Program Counter.  The PC that triggered a trap. \\
+  mcause & Machine Cause.  The cause of the current trap/interrupt. \\
+  mtval & Additional value information.  For memory faults, the address fetched that triggered the fault.
+\end{tabular}
