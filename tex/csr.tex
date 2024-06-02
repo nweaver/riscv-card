@@ -10,19 +10,136 @@ Instruction & Operation & Notes \\ \hline
 {\tt csrrci rd csr imm} & {\tt csr = \^imm \& csr, rd = csr} & {\tt imm=0} only reads.  Immediate is 5 bit, zero extended \\
 \end{tabular}
 
-\vspace{0.5in} The listing of CSRs is deliberately incomplete.
+\vspace{0.2in}
 Pseudo-instructions {\tt csrw} and {\tt csrr} are converted to {\tt
   csrrw} and {\tt csrrs} respectively.  All CSR instructions are
 I-type with the immediate specifying the CSR.  The immediate CSRs use
 the source register as a 5-bit, zero-extended immediate.  Traps are
 returned from using {\tt mret}.
 
+The listing of CSRs is deliberately incomplete but it
+is designed for both a ECS 50 (assembly) class and an ECS 150
+(operating systems) type class as a quick reference.
 \vspace{0.2in}
 
 \begin{tabular}{l|l}
   CSR & Meaning and Access \\ \hline
-  mtvec & Address of the trap handler.  If the last bit is set the interrupt portion is vectored. \\
-  mepc & Machine Exception Program Counter.  The PC that triggered a trap. \\
-  mcause & Machine Cause.  The cause of the current trap/interrupt. \\
-  mtval & Additional value information.  For memory faults, the address fetched that triggered the fault.
+  \tt misa & Machine ISA: Allows checking what extensions are supported and disabling them. \\
+  \tt mvendorid & Manufacturer ID number \\
+  \tt marchid & Architeture ID number \\
+  \tt mhartid & Hart (HARdware Thread) number \\
+  \tt mstatus & The lower 32b of machine status. \\
+  \tt mstatush & The upper 32b of machine status. \\
+  \tt mtvec & Address of the trap handler.  If the last bit is set the interrupt portion is vectored. \\
+  {\tt medeleg} and {\tt mideleg} & Delegation of interrupts \\
+  {\tt mip} and {\tt mie} & Pending interrupts and enabled interrupts \\
+  \tt mepc & Machine Exception Program Counter.  The PC that triggered a trap. \\
+  \tt mcause & Machine Cause.  The cause of the current trap/interrupt. \\
+  \tt mtval & Additional value information.  For memory faults, the address fetched that triggered the fault. \\
+
+  \tt pmpcfg0-pmpcfg15 & Physical Memory Protection configuration \\
+  \tt pmpaddr0-pmpaddr63 & Physical Memory Protection Addresses \\
+  \tt sapt & System Page Table pointer \\
+  
 \end{tabular}
+
+\vspace{0.2in}
+
+Comments on particular CSRs
+
+{\tt mhartid}: RISC-V specifies a ``Hart'' as a Hardware thread of
+execution.  In the absence of symmetric multithreading, this is the
+CPU core number.  If there is hardware multithreading it specifies the
+distinct hardware thread where multiple threads can share a single CPU
+core.
+
+{\tt mstatus} and {\tt mstatush}: These CSRs ({\tt mstatush} only
+exists on RV32, RV64 just has a combined {\tt mstatus}) state both the
+current state of the machine in terms of operating mode and other
+operating data.  This includes whether interrupts are enabled, what
+mode the system is currently in, and what mode the system will be
+returned to with {\tt mret} or {\tt sret} when returning from the trap
+handler.  This CSR is very complicated with lots of details for those
+implementing operating systems or similar low level code.
+
+{\tt mtvec}: This is the address of the trap handler.  When an
+interrupt or trap occurs the CPU will update the operating mode and
+jump to the trap handler code, disabling interrupts so the trap
+handler won't be interrupted during the process.  If the last two bits
+are {\tt 01b} the interrupts are vectored: jumping to {\tt mtvec +
+  4*{\it Interrupt number}}.
+
+{\tt medeleg} and {\tt mideleg}: RISC-V supports up to 32 distinct
+traps and interrupts.  This register allows machine mode (M-mode) to
+delegate specific traps and interrupts to the S-mode, so that those
+traps are instead handled by the S-mode trap handler.  Only traps that
+occur in S-mode or U-mode are delegated, any trap or interrupt that
+occurs while in M-mode will never be delegated to the S-mode trap
+handler.
+
+{\tt mscratch}: This register generally holds a pointer to space for
+the trap handler.  The common convention for the trap handler is to
+perform an atomic swap with {\tt sp}, giving the trap handler its own
+stack space.  The trap handler can then save all registers.  Once this
+is complete the trap handler can now operate normally.  When exiting
+the trap handler the trap handler should restore all the registers,
+restore {\tt sp} by again swapping it with {\tt mscratch}, and then
+execute {\tt mret}.
+
+{\tt mepc}: The address of the instruction triggering a trap.  For an
+exception this is the instruction which triggered the exception (and
+is not yet executed) and for an interrupt it is the first instruction
+not yet executed.  If the trap handler wants to retry the instruction
+(e.g. because it was an interrupt or because it was a corrected memory
+protection error), {\tt mret} will just return to the address in {\tt
+  mepc}.  If the trap handler instead corrected the exception (e.g. a
+misaligned load), it should first increment {\tt mepc} to the next
+instruction before returning.
+
+{\tt mcause}: The particular trap/interrupt number that triggered the
+exception.  Interrupts have the MSB set (allowing an easy signed
+comparison with 0).
+
+{\tt mtval}: The value depends on the particular trap or interrupt.
+For memory related faults (e.g. misaligned load, page fault), it
+always contains the virtual address of the memory who's access
+triggered the fault.
+
+{\tt pmpcfg*} and {\tt pmpaddr*}: These CSRs are to implement a low
+level Physical Memory Protection scheme, allowing M-mode to control
+what memory is accessed in S-Mode or U-Mode.  Its primary usage is on
+small embedded processor that don't run a full virtual-memory
+supporting operating system but still want some level of protection.
+
+The config registers use 8 bits to indicate the status of each
+corresponding address register.  These include whether S/U mode can
+Read data, Write data, eXecute data, the Address mode for the address
+register, and whether to Lock out control.
+
+The two primary address modes are to specify a Naturally Aligned Power
+of 2 (NAPOT) in the corresponding address register or whether two
+addresses should be taken together to specify a valid range.
+
+{\tt satp}: This is the pointer to the page table.  For efficiency
+reasons it points to a physical page rather than a specific memory
+location, because page table entries are aligned on page-boundaries.
+It only exists if the processor supports S mode, and it can be applied
+for both S-mode and U-mode accesses.
+
+The page table itself is a 2-level radix structure: Pages in RISC-V
+are 4 kB which means the page offset a 12b value and the virtual
+address is 20b.  Since pages are 4 kB, and page table entries are 4B,
+this means that we can fit 1024 page table entries in a physical page.
+
+The SATP pointer points to the root physical page: The upper 10 bits
+of the virtual address are used to look up the individual entry.  If
+the entry is invalid it triggers a trap.  If it is valid the resulting
+entry specifies another page to evaluate the next 10 bits of the
+vitrual address.  Once the proper page table entry is found the
+physical address then replaces the virtual address before the actual
+memory fetch occurs.
+
+One particular note is that the S and U modes can use the same page
+table.  In that case the system's pages are usually marked as both
+``global'' for efficiently 23098and unaccessable to U mode.
+

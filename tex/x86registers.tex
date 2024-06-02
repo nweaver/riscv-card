@@ -1,0 +1,154 @@
+\section*{X86-64 Registers}
+
+\begin{tabular} {l | l | l | l | l | l} \hline
+  64B register & 32B & 16B & 8B & Description & Saver \\ \hline
+  \tt{rax} & \tt{eax} & \tt{ax} & \tt{al} & Return Value & Caller \\
+  \tt{rbx} & \tt{ebx} & \tt{bx} & \tt{bl} & Saved Register & Callee \\
+  \tt{rcx} & \tt{ecx} & \tt{cx} & \tt{cl} & Arg 4 & Caller \\
+  \tt{rdx} & \tt{edx} & \tt{dx} & \tt{dl} & Arg 3 & Caller \\
+  \tt{rsi} & \tt{esi} & \tt{si} & \tt{sil} & Arg 2 & Caller \\
+  \tt{rdi} & \tt{edi} & \tt{di} & \tt{dil} & Arg 1 & Caller \\
+  \tt{rsp} & \tt{esp} & \tt{sp} & \tt{sil} & Stack Pointer & N/A \\
+  \tt{rbp} & \tt{ebp} & \tt{bp} & \tt{bpl} & Frame Pointer & Callee \\
+  \tt{r8} & \tt{r8d} & \tt{r8w} & \tt{r8b} & Arg 5 & Caller \\
+  \tt{r9} & \tt{r9d} & \tt{r9w} & \tt{r9b} & Arg 6  & Caller \\
+  \tt{r10} & \tt{r10d} & \tt{r10w} & \tt{r10b} & Scratch & Caller \\
+  \tt{r11} & \tt{r11d} & \tt{r11w} & \tt{r11b} & Scratch & Caller \\
+  \tt{r12} & \tt{r12d} & \tt{r12w} & \tt{r12b} & Saved Register & Callee \\
+  \tt{r13} & \tt{r13d} & \tt{r13w} & \tt{r13b} & Saved Register & Callee \\
+  \tt{r14} & \tt{r14d} & \tt{r14w} & \tt{r14b} & Saved Register & Callee \\
+  \tt{r15} & \tt{r15d} & \tt{r15w} & \tt{r15b} & Saved Register & Callee \\
+\end{tabular}
+
+\vspace{0.2in} Most x86 instructions are a 2-argument form, with one
+of the arguments capable of being a memory location, not just a
+register or an immediate.
+
+\vspace{0.2in}
+
+\begin{tabular}{l|l|l} \hline
+  Mode & Meaning & Examples \\ \hline
+  Immediate & A 32b immediate value & \tt 0x381 \\
+  & & 42 \\ \hline
+  Register & A register  & \tt rax \\
+  & & \tt r11b \\ \hline
+  Memory Location & Memory location & \tt [rax] \\
+  & & \tt [r11 + 32] \\ \hline
+  Indexed Memory Location & The second register is multiplied by & \tt [rax + 8 * rbp] \\
+  & the stride (1, 2, 4, or 8 only) & [r11 + 4 * r12 + 32] \\ \hline
+  
+  \end{tabular}
+
+\vspace{0.2in} We use Intel syntax, which automatically inferrs the
+bit width for operations based on the register involved.  For the rare
+case where one wishes to use an instruction with just an immediate and
+memory, we need to specify the bit width explicitly either by writing
+the immediate into a register first or by annotating the memory
+location with {\tt byte ptr}, {\tt word ptr}, {\tt dword ptr}, or {\tt
+  qword ptr} for 1, 2, 4, and 8 bits respectively.
+
+One can see the large variety possible through addressing in the following eamples for {\tt mov}.
+
+\vspace{0.2in}
+
+\begin{tabular}{l|l}
+  Example & Meaning \\ \hline
+  \tt mov rdi, rsi & Move the contents of register {\tt rsi} into {\tt rdi} \\
+  \tt mov rdi, [rsi] & Load the memory pointed to by {\tt rsi} (equivalent to RISC-V {\tt lw} \\ 
+  \tt mov rdi, 0xf00d & Load the immediate into {\tt rdi}.  \\
+  \tt mov [rsi + 8], rdi & Store the contents of {\tt rdi} into the memory location {\tt rsi + 8} \\
+  \tt mov [rsi + rdx * 8 + 32], rdi & Store the contents of {\tt rdi} into the memory location {\tt rsi + rdi * 8 + 32} \\
+  \tt mov dword ptr [rsi + 32], -42 & Store the 32b immediate value -42 into the memory location {\tt rsi + 32} \\
+  
+  \end{tabular}
+
+\clearpage
+
+\section{x86-64 Instructions}
+
+For our x86-64 programming we are using a deliberately RISC-like
+subset of x86, specifically excluding instructions like {\tt push} and
+{\tt pop} that manipulate the stack.
+
+\vspace{0.2in}
+\begin{tabular}{l|l} \hline
+  Instruction & Meaning \\ \hline
+\tt add dst, src & Add the source and destination together, storing the
+result in the destination \\
+\tt and dst, src & Performs a logical AND between the source and
+destination, storing the results in the destination \\
+\tt call target & Control flow transfer to label or register, decrements rsp by 8,
+storing rip into [rsp] \\
+\tt cmov{\it cc} dst, src & Conditional move from source to dst. See condition
+codes \\
+\tt cmp src1, src2 & Compare the two values and set the flags for conditional
+move and branch \\
+\tt div arg & Unsigned division: This takes a 128b number composed
+of {\tt rdx:rax} (that is, the upper 64b are in \\
+  & {\tt rdx}) and uses
+the arg as the divisor, treating the arguments as signed.
+The quotient is placed in {\tt rax} \\
+& while the remainder is in {\tt rdx} \\
+\tt idiv arg & Signed division: This takes a 128b number composed
+of {\tt rdx:rax} (that is, the upper 64b are in \\
+  & {\tt rdx}) and uses
+the arg as the divisor, treating the arguments as signed.
+The quotient is placed in {\tt rax} \\
+& while the remainder is in {\tt rdx} \\
+\tt imul dst, src & Unsigned multiplication: This multiplies the source and
+destination together, \\ & writing it in the destination. The
+destination must be a register. \\ 
+\tt imul dst, src, imm & Unsigned multiplication: This multiplies the source by
+the 32b sign-extended immediate, \\ & writing it in the
+destination. The destination must be a register. \\
+\tt j{\it cc} dst & Conditional jump: Jump to the destination if the condition
+is true. See condition codes \\ 
+\tt jmp dst & Transfer control flow to the destination \\
+\tt lea dst, src & Load Effective Immediate: Load the address referred to
+in src into dst. \\
+\tt mul src & Signed multiplication: This multiples the source by the
+contents of the {\tt rax} register, \\ & storing the lower 64b of the
+results in {\tt rax} and the upper 64b in {\tt rdx}. \\
+\tt mov dst, src & Move src into destination \\
+\tt neg dst & 2s complement negation of the destination \\
+\tt not dst & Bitwise negation of the destination \\
+\tt or dst, src & Performs a logical OR between the source and
+destination, writing the results in the destination \\
+\tt ret & Loads rip as [rsp], increments rsp by 8, transfers
+control flow to rip \\ 
+\tt shl dst, src & Shifts the destination to the left by src bits \\
+\tt sar dst, src & Shifts the destination to the right by src bits, shifting in
+the sign bit \\ 
+\tt shr dst, src & Shifts the destination to the right by src bits, shifting in 0
+bits on the left \\
+\tt sub dst, src & Calculates dst - src, writing the results into dst \\
+\tt xor dst, src & Performs a logical XOR between the source and
+destination, writing the results in the destination \\ \hline
+\end{tabular}
+
+\vspace{.2in} X86 uses a ``compare and conditional operation'' motif
+for branches and conditional moves.  Many instructions set various
+condition flags, but the most common is {\tt cmp} which performs a
+subtraction but only sets the flags.  This is not all of the mnemonics
+but it is the most important set.
+
+\vspace{0.2in}
+\begin{tabular}{l|l|l}
+  Code & Meaning & Examples \\
+\tt a & Above (unsigned $>$) & \tt cmova, ja \\
+\tt ae & Above or equal (unsigned $>=$) & \tt cmovae, jae  \\
+\tt b & Below (unsigned $<$) & \tt cmovb, jb \\ 
+\tt be & Below or equal (unsigned <=) & \tt  cmovbe, jbe \\ 
+\tt e & Equal  & \tt cmove, je \\
+\tt g &   Greater (signed >)  & \tt  cmovg, jg \\
+\tt  ge & Greater or equal (signed >=)  & \tt  cmovge, jge \\
+\tt l & Less than (signed <)  & \tt  cmovl, jl  \\
+\tt le & Less than or equal (signed <=)  & \tt  cmovle, jle  \\
+\tt ne & Not equal  & \tt  cmovne, jne  \\
+\tt ns & Not sign (result was positive)  & \tt  cmovns, jns \\
+\tt nz & Not zero  & \tt  cmovnz, jnz  \\
+\tt s & Sign (result was negative)  & \tt  cmovs, js \\
+\tt z & Zero (result was zero) & \tt  cmovz, jz \\
+\end{tabular}
+
+
